@@ -1,0 +1,2 @@
+## 1. Contract interface'leri uyglamanın detayları ile ilgilenmez.
+    * Hangi metodları implement edeceğimizi belirler, daha doğrusu kuralları belirler.
