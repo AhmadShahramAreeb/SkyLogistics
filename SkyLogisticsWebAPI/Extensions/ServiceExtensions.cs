@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Repositories.Contracts;
 using Repositories.EFCore;
 
-namespace SkyLogisticsAPI.Extensions;
+namespace SkyLogisticsWebAPI.Extensions;
 
 /*
  PURPOSE / AMAÇ:

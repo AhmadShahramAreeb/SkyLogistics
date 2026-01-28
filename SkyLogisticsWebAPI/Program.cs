@@ -1,4 +1,4 @@
-using SkyLogisticsAPI.Extensions;
+using SkyLogisticsWebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
