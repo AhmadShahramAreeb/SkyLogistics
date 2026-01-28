@@ -35,6 +35,7 @@ public class RepositoryManager : IRepositoryManager
     {
         _context = context;
         _droneRepository = new Lazy<IDroneRepository>(() => new DroneRepository(_context));
+
         /*
          * ───────────────────────────────────────────────────────────────────────────
          * SYNTAX BREAKDOWN:
@@ -102,13 +103,26 @@ public class RepositoryManager : IRepositoryManager
          */
     }
 
-    public IDroneRepository Drone
-    {
-        get;
-    }
+    /*
 
+     *  When you ask for manager.Drone, it creates and returns a DroneRepository, passing it the shared _context.
+        Note: In this specific implementation, a new instance is created every time you access the property.
+
+    *  Accesses the Lazy<IDroneRepository> wrapper
+       Triggers lazy instantiation via .Value
+       Returns the DroneRepository instance
+
+     */
+    public IDroneRepository Drone => _droneRepository.Value;
+
+    /*  This is the most critical part. When you add, update,
+        or delete entities using the repositories (e.g., _manager.Drone.Create(book)),
+        those changes are only in memory. Nothing is written to the database until you call _manager.Save().
+        This allows you to perform complex operations (e.g., "Create a Drone" AND "Update a property") and save them all at once.
+        If one fails, none are saved, keeping your data consistent.
+    */
     public void Save()
     {
-
+        _context.SaveChanges();
     }
 }
