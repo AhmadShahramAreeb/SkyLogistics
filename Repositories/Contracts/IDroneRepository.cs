@@ -60,6 +60,7 @@ They are "invisible" but they are there.
  */
 
     IQueryable<Drone> GetAllDrones(bool trackChanges);
+    IQueryable<Drone> GetAllDronesByBatteryLevel(bool trackChanges);
     Drone GetOneDroneById(int id, bool trackChanges);
     void CreateOneDrone(Drone drone);
     void UpdateOneDrone(Drone drone);
