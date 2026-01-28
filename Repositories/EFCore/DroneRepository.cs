@@ -7,11 +7,11 @@ namespace Repositories.EFCore;
 /*
  * ## 1. The Big Picture
    We are using a **Generic Repository Pattern**.
-   **Generic**: We write the common code (Create, Read, Update, Delete) once and reuse it for all tables (Books, Users, Products, etc.).
-   **Specific**: We create specific repositories (like `BookRepository`) for logic that only applies to that specific table.
+   **Generic**: We write the common code (Create, Read, Update, Delete) once and reuse it for all tables (Drone, Users, Products, etc.).
+   **Specific**: We create specific repositories (like `DroneRepository`) for logic that only applies to that specific table.
 
- **Problem**: `RepositoryBase` is too generic. It doesn't know about "Books".
- **Solution**: We create a specific repository for Books that inherits the generic powers but can also have specific rules.
+ **Problem**: `RepositoryBase` is too generic. It doesn't know about "Drone".
+ **Solution**: We create a specific repository for Drone that inherits the generic powers but can also have specific rules.
  */
 public class DroneRepository:RepositoryBase<Drone>, IDroneRepository
 {
