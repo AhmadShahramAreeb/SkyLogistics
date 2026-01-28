@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entities", "Entities\Entiti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repositories", "Repositories\Repositories.csproj", "{AC17A9BA-6625-40C5-9E53-DA362FB8F6FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyLogisticsAPI", "SkyLogisticsAPI\SkyLogisticsAPI.csproj", "{6B5A549A-1F18-474D-80F3-CD6B3CA18894}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyLogisticsWebAPI", "SkyLogisticsWebAPI\SkyLogisticsWebAPI.csproj", "{6B5A549A-1F18-474D-80F3-CD6B3CA18894}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
