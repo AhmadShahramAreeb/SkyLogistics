@@ -27,21 +27,33 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
         _context = context;
     }
 
-    public void Create(T entity)
-    {
-        _context.Set<T>().Add(entity);
-    }
+    /*
+         _context  // RepositoryContext (DbContext)
 
-    public void Update(T entity)
-    {
-        _context.Set<T>().Update(entity);
-    }
+         _context.Set<T>()
+       //       ↑
+       // DbSet<T> döndürür (Tablo erişimi)
 
-    public void Delete(T entity)
-    {
-        _context.Set<T>().Remove(entity);
-    }
+       // T = Drone ise:
+       _context.Set<Drone>() → DbSet<Drone> → Drones tablosu
 
+     */
+    public void Create(T entity) => _context.Set<T>().Add(entity);
+
+    public void Update(T entity) => _context.Set<T>().Update(entity);
+
+    public void Delete(T entity) => _context.Set<T>().Remove(entity);
+
+    /*
+     // Traditional
+       public string GetName()
+       {
+           return "Ahmad";
+       }
+
+       // Expression-bodied
+       public string GetName() => "Ahmad";
+     */
     public IQueryable<T> FindAll(bool trackChanges) =>
         //  _context.Set<T>(); Bu metod değişlikleri yapmak için çalışacak
         !trackChanges ? _context.Set<T>().AsNoTracking() : _context.Set<T>();
@@ -52,4 +64,8 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
         !trackChanges ?
             _context.Set<T>().Where(expression).AsNoTracking() :
             _context.Set<T>().Where(expression);
+    /*
+     (AsNoTracking) → sadece okunur, değişiklik yapılmaz
+    _context.Set<T>() : (Tracking) → Kitap alınır, değişiklikler kaydedilir
+     */
 }
