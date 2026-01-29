@@ -1,3 +1,4 @@
+using Entities.Models;
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Contracts;
 
@@ -24,7 +25,7 @@ namespace SkyLogisticsWebAPI.Controllers
             _manager = manager;
         }
 
-        [HttpGet]
+        [HttpGet("sorted/id")]
         public IActionResult GetAllDrones()
         {
             try
@@ -44,7 +45,7 @@ namespace SkyLogisticsWebAPI.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("sorted/batteryLevel")]
         public IActionResult GetAllDronesByBatteryLevel()
         {
             try
@@ -77,6 +78,62 @@ namespace SkyLogisticsWebAPI.Controllers
                 }
 
                 return Ok(drone);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult AddDrone([FromBody] Drone drone)
+        {
+            try
+            {
+                if (drone is null)
+                {
+                    return BadRequest(); // 400
+                }
+
+                _manager.Drone.CreateOneDrone(drone);
+                _manager.Save();
+
+                return StatusCode(201, drone); // Created
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        [HttpPut("{id:int}")]
+        public IActionResult UpdateDroneById([FromRoute(Name = "id")] int id,
+            [FromBody] Drone drone)
+        {
+            try
+            {
+                // Drone verification , is there any Drone by this id ?
+                var entity = _manager.Drone.GetOneDroneById(id, true);
+
+                // FIRST: Check if drone exists in database
+                if (entity is null)
+                {
+                    return NotFound("Drone With id ${id} Not Found in Database");
+                }
+
+                // SECOND: Validate that route ID matches body ID
+                if (id != drone.Id)
+                {
+                    return BadRequest("Route ID and Body ID must match");
+                }
+
+                entity.Model = drone.Model;
+                entity.SerialNumber = drone.SerialNumber;
+                entity.BatteryLevel = drone.BatteryLevel;
+                entity.Status = drone.Status;
+
+                _manager.Save();
+                return Ok(entity);
             }
             catch (Exception ex)
             {
