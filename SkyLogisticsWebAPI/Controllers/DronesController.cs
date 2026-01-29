@@ -1,4 +1,5 @@
 using Entities.Models;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Contracts;
 
@@ -118,13 +119,13 @@ namespace SkyLogisticsWebAPI.Controllers
                 // FIRST: Check if drone exists in database
                 if (entity is null)
                 {
-                    return NotFound("Drone With id ${id} Not Found in Database");
+                    return NotFound($"Drone With id {id} Not Found in Database"); // 404
                 }
 
                 // SECOND: Validate that route ID matches body ID
                 if (id != drone.Id)
                 {
-                    return BadRequest("Route ID and Body ID must match");
+                    return BadRequest("Route ID and Body ID must match"); //400
                 }
 
                 entity.Model = drone.Model;
@@ -134,6 +135,56 @@ namespace SkyLogisticsWebAPI.Controllers
 
                 _manager.Save();
                 return Ok(entity);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public IActionResult DeleteOneDroneById([FromRoute(Name = "id")] int id)
+        {
+            try
+            {
+                // Drone verification , is there any Drone by this id ?
+                var entity = _manager.Drone.GetOneDroneById(id, true);
+
+                // FIRST: Check if drone exists in database
+                if (entity is null)
+                {
+                    return NotFound($"Drone With id {id} Not Found in Database"); //404
+                }
+
+                _manager.Drone.DeleteOneDrone(entity);
+                _manager.Save();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id:int}")]
+        public IActionResult PartiallyUpdateDroneById([FromRoute(Name = "id")] int id,
+            [FromBody] JsonPatchDocument<Drone> dronePatch)
+        {
+            try
+            {
+                // Drone verification , is there any Drone by this id ?
+                var entity = _manager.Drone.GetOneDroneById(id, true);
+
+                // FIRST: Check if drone exists in database
+                if (entity is null)
+                {
+                    return NotFound($"Drone With id {id} Not Found in Database"); //404
+                }
+
+                dronePatch.ApplyTo(entity);
+                _manager.Drone.UpdateOneDrone(entity);
+                _manager.Save();
+                return NoContent();
             }
             catch (Exception ex)
             {
