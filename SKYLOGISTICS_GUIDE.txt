@@ -1,0 +1,754 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TECHNICAL DESIGN DOCUMENT (TDD)                           ║
+║                         TEKNİK TASARIM DOKÜMANI                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  PROJECT NAME   │  SkyLogistics - Autonomous Drone Delivery System           ║
+║  PROJE ADI      │  SkyLogistics - Otonom Drone Teslimat Sistemi              ║
+╠═════════════════╪════════════════════════════════════════════════════════════╣
+║  DOCUMENT ID    │  TDD-SKY-001                                               ║
+║  VERSION        │  1.0.0                                                     ║
+║  DATE           │  2026-01-27                                                ║
+║  Developer Eng. │  Ahmad Shahram AREEB                                       ║
+║  STATUS         │  DRAFT                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           TABLE OF CONTENTS                                  │
+│                              İÇİNDEKİLER                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  1.0  INTRODUCTION / GİRİŞ                                                   │
+│  2.0  GLOSSARY / TERİMLER SÖZLÜĞÜ                                            │
+│  3.0  ARCHITECTURE OVERVIEW / MİMARİ GENEL BAKIŞ                             │
+│  4.0  PHASE 1: SOLUTION SETUP / ÇÖZÜM KURULUMU                               │
+│  5.0  PHASE 2: ENTITIES LAYER / VARLIKLAR KATMANI                            │
+│  6.0  PHASE 3: REPOSITORIES LAYER / DEPOLAR KATMANI                          │
+│  7.0  PHASE 4: API LAYER / API KATMANI                                       │
+│  8.0  PHASE 5: DATABASE & TESTING / VERİTABANI VE TEST                       │
+│  9.0  APPENDIX / EKLER                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+1.0  INTRODUCTION / GİRİŞ
+════════════════════════════════════════════════════════════════════════════════
+
+1.1  PURPOSE / AMAÇ
+────────────────────────────────────────────────────────────────────────────────
+EN: This document provides a step-by-step guide for building a backend API
+    using N-Tier Architecture with ASP.NET Core and Entity Framework Core.
+
+TR: Bu doküman, ASP.NET Core ve Entity Framework Core kullanarak N-Tier
+    Mimarisi ile bir backend API oluşturmak için adım adım rehber sunar.
+
+
+1.2  SCOPE / KAPSAM
+────────────────────────────────────────────────────────────────────────────────
+EN: The system will manage a fleet of autonomous delivery drones, including:
+    • Drone registration and status tracking
+    • Battery level monitoring
+    • Basic CRUD operations via REST API
+
+TR: Sistem, otonom teslimat drone filosunu yönetecek ve şunları içerecek:
+    • Drone kaydı ve durum takibi
+    • Pil seviyesi izleme
+    • REST API üzerinden temel CRUD işlemleri
+
+
+════════════════════════════════════════════════════════════════════════════════
+2.0  GLOSSARY / TERİMLER SÖZLÜĞÜ
+════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ TERM / TERİM        │ DEFINITION / TANIM                                     │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Solution (.sln)     │ EN: A container file that groups multiple projects.    │
+│ Çözüm               │ TR: Birden fazla projeyi gruplandıran kapsayıcı dosya. │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Class Library       │ EN: A reusable code package that cannot run alone.     │
+│ Sınıf Kütüphanesi   │ TR: Tek başına çalışamayan yeniden kullanılabilir kod. │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Entity              │ EN: A C# class that represents a database table.       │
+│ Varlık              │ TR: Veritabanı tablosunu temsil eden C# sınıfı.        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Repository          │ EN: A class that handles database operations.          │
+│ Depo                │ TR: Veritabanı işlemlerini yürüten sınıf.              │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ DbContext           │ EN: The bridge between C# code and the database.       │
+│ Veritabanı Bağlamı  │ TR: C# kodu ile veritabanı arasındaki köprü.           │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Interface           │ EN: A contract defining what methods must exist.       │
+│ Arayüz              │ TR: Hangi metotların olması gerektiğini tanımlayan söz.│
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Controller          │ EN: Handles incoming HTTP requests and responses.      │
+│ Denetleyici         │ TR: Gelen HTTP isteklerini ve yanıtlarını yönetir.     │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Migration           │ EN: A script that creates/updates database tables.     │
+│ Göç                 │ TR: Veritabanı tablolarını oluşturan/güncelleyen betik.│
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ NuGet               │ EN: The package manager for .NET libraries.            │
+│                     │ TR: .NET kütüphaneleri için paket yöneticisi.          │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Dependency          │ EN: Automatic creation and passing of objects.         │
+│ Injection (DI)      │ TR: Nesnelerin otomatik oluşturulması ve aktarılması.  │
+│ Bağımlılık Enjeks.  │                                                        │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+3.0  ARCHITECTURE OVERVIEW / MİMARİ GENEL BAKIŞ
+════════════════════════════════════════════════════════════════════════════════
+
+3.1  LAYER DIAGRAM / KATMAN DİYAGRAMI
+────────────────────────────────────────────────────────────────────────────────
+
+                    ┌─────────────────────────────┐
+                    │     SkyLogisticsAPI         │  ← PRESENTATION LAYER
+                    │     (Web API Project)       │     Sunum Katmanı
+                    │  • DronesController         │     [HTTP Requests]
+                    │  • ServiceExtensions        │
+                    └──────────────┬──────────────┘
+                                   │ references (bağlantı)
+                                   ▼
+                    ┌─────────────────────────────┐
+                    │     Repositories            │  ← DATA ACCESS LAYER
+                    │     (Class Library)         │     Veri Erişim Katmanı
+                    │  • RepositoryContext        │     [SQL Operations]
+                    │  • RepositoryBase           │
+                    │  • DroneRepository          │
+                    │  • RepositoryManager        │
+                    └──────────────┬──────────────┘
+                                   │ references (bağlantı)
+                                   ▼
+                    ┌─────────────────────────────┐
+                    │     Entities                │  ← DOMAIN LAYER
+                    │     (Class Library)         │     Alan Katmanı
+                    │  • Models/Drone.cs          │     [Data Definitions]
+                    └─────────────────────────────┘
+
+
+3.2  COMPONENT MAP / BİLEŞEN HARİTASI
+────────────────────────────────────────────────────────────────────────────────
+
+┌──────────────┬──────────────────────┬────────────────────────────────────────┐
+│ LAYER        │ COMPONENT            │ FILE TO CREATE                         │
+│ KATMAN       │ BİLEŞEN              │ OLUŞTURULACAK DOSYA                    │
+├──────────────┼──────────────────────┼────────────────────────────────────────┤
+│ Entities     │ Drone Model          │ Entities/Models/Drone.cs               │
+├──────────────┼──────────────────────┼────────────────────────────────────────┤
+│ Repositories │ Repository Context   │ Repositories/EFCore/RepositoryContext  │
+│              │ Generic Interface    │ Repositories/Contracts/IRepositoryBase │
+│              │ Generic Class        │ Repositories/EFCore/RepositoryBase     │
+│              │ Drone Interface      │ Repositories/Contracts/IDroneRepository│
+│              │ Drone Class          │ Repositories/EFCore/DroneRepository    │
+│              │ Manager Interface    │ Repositories/Contracts/IRepoManager    │
+│              │ Manager Class        │ Repositories/EFCore/RepositoryManager  │
+├──────────────┼──────────────────────┼────────────────────────────────────────┤
+│ API          │ Extensions           │ SkyLogisticsAPI/Extensions/ServiceExt  │
+│              │ Controller           │ SkyLogisticsAPI/Controllers/DronesCont │
+│              │ Configuration        │ SkyLogisticsAPI/appsettings.json       │
+└──────────────┴──────────────────────┴────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+4.0  PHASE 1: SOLUTION SETUP / ÇÖZÜM KURULUMU
+════════════════════════════════════════════════════════════════════════════════
+
+OBJECTIVE / HEDEF:
+EN: Create the project structure and link all layers.
+TR: Proje yapısını oluştur ve tüm katmanları bağla.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4.1: CREATE SOLUTION
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Create an empty solution container.
+NE     : Boş bir çözüm konteyneri oluştur.
+
+COMMAND:
+    mkdir SkyLogistics
+    cd SkyLogistics
+    dotnet new sln -n SkyLogistics
+
+OUTPUT : Creates file "SkyLogistics.sln"
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4.2: CREATE ENTITIES LIBRARY
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Create a class library for database models.
+NE     : Veritabanı modelleri için bir sınıf kütüphanesi oluştur.
+
+COMMAND:
+    dotnet new classlib -n Entities
+    dotnet sln add Entities/Entities.csproj
+
+OUTPUT : Creates folder "Entities/" with "Entities.csproj"
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4.3: CREATE REPOSITORIES LIBRARY
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Create a class library for data access logic.
+NE     : Veri erişim mantığı için bir sınıf kütüphanesi oluştur.
+
+COMMAND:
+    dotnet new classlib -n Repositories
+    dotnet sln add Repositories/Repositories.csproj
+
+OUTPUT : Creates folder "Repositories/" with "Repositories.csproj"
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4.4: CREATE WEB API PROJECT
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Create the executable web API project.
+NE     : Çalıştırılabilir web API projesini oluştur.
+
+COMMAND:
+    dotnet new webapi -n SkyLogisticsAPI
+    dotnet sln add SkyLogisticsAPI/SkyLogisticsAPI.csproj
+
+OUTPUT : Creates folder "SkyLogisticsAPI/" with Program.cs and Controllers/
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4.5: LINK THE LAYERS (ADD REFERENCES)
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Tell each project which other projects it depends on.
+NE     : Her projeye hangi diğer projelere bağlı olduğunu söyle.
+
+COMMAND:
+    dotnet add Repositories/Repositories.csproj reference Entities/Entities.csproj
+    dotnet add SkyLogisticsAPI/SkyLogisticsAPI.csproj reference Repositories/Repositories.csproj
+
+RESULT : Repositories can use Entities. API can use Repositories.
+
+
+════════════════════════════════════════════════════════════════════════════════
+5.0  PHASE 2: ENTITIES LAYER / VARLIKLAR KATMANI
+════════════════════════════════════════════════════════════════════════════════
+
+OBJECTIVE / HEDEF:
+EN: Define the data model (what a "Drone" looks like).
+TR: Veri modelini tanımla (bir "Drone" neye benziyor).
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 5.1: CLEAN UP DEFAULT FILES
+────────────────────────────────────────────────────────────────────────────────
+ACTION : Delete "Entities/Class1.cs" (auto-generated, not needed).
+EYLEM  : "Entities/Class1.cs" dosyasını sil (otomatik oluşturulmuş, gerekli değil).
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 5.2: CREATE MODELS FOLDER
+────────────────────────────────────────────────────────────────────────────────
+ACTION : Create folder "Entities/Models/"
+EYLEM  : "Entities/Models/" klasörünü oluştur.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 5.3: CREATE DRONE MODEL
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Entities/Models/Drone.cs
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+namespace Entities.Models;
+
+public class Drone
+{
+    // Primary Key: Unique identifier for each drone.
+    // Birincil Anahtar: Her drone için benzersiz tanımlayıcı.
+    public int Id { get; set; }
+
+    // The commercial name of the drone (e.g., "Phantom 4 Pro").
+    // Drone'un ticari adı (örn. "Phantom 4 Pro").
+    public string Model { get; set; }
+
+    // Serial number for tracking.
+    // Takip için seri numarası.
+    public string SerialNumber { get; set; }
+
+    // Current battery percentage (0.0 to 100.0).
+    // Mevcut pil yüzdesi (0.0 ile 100.0 arası).
+    public double BatteryLevel { get; set; }
+
+    // Current operational status: "Idle", "Flying", "Charging", "Maintenance".
+    // Mevcut operasyonel durum: "Boşta", "Uçuşta", "Şarjda", "Bakımda".
+    public string Status { get; set; }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+
+════════════════════════════════════════════════════════════════════════════════
+6.0  PHASE 3: REPOSITORIES LAYER / DEPOLAR KATMANI
+════════════════════════════════════════════════════════════════════════════════
+
+OBJECTIVE / HEDEF:
+EN: Create the data access logic using Entity Framework Core.
+TR: Entity Framework Core kullanarak veri erişim mantığını oluştur.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.1: INSTALL NUGET PACKAGES
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Install Entity Framework Core SQL Server provider.
+NE     : Entity Framework Core SQL Server sağlayıcısını yükle.
+
+COMMAND:
+    dotnet add Repositories/Repositories.csproj package Microsoft.EntityFrameworkCore.SqlServer
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.2: CREATE FOLDER STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+ACTION : Create the following folders inside "Repositories/":
+         • Contracts (for Interfaces)
+         • EFCore (for Implementations)
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.3: CREATE REPOSITORY CONTEXT
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/EFCore/RepositoryContext.cs
+
+PURPOSE: The database session. Maps C# classes to SQL tables.
+AMAÇ   : Veritabanı oturumu. C# sınıflarını SQL tablolarına eşler.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Entities.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace Repositories.EFCore;
+
+public class RepositoryContext : DbContext
+{
+    // Constructor: Receives connection string options from DI.
+    // Yapıcı: Bağlantı dizesi seçeneklerini DI'dan alır.
+    public RepositoryContext(DbContextOptions options) : base(options)
+    {
+    }
+
+    // DbSet: Maps the "Drone" class to a "Drones" table.
+    // DbSet: "Drone" sınıfını "Drones" tablosuna eşler.
+    public DbSet<Drone> Drones { get; set; }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.4: CREATE GENERIC REPOSITORY INTERFACE
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/Contracts/IRepositoryBase.cs
+
+PURPOSE: A generic contract for common CRUD operations.
+AMAÇ   : Ortak CRUD işlemleri için genel bir sözleşme.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using System.Linq.Expressions;
+
+namespace Repositories.Contracts;
+
+public interface IRepositoryBase<T>
+{
+    // Get all entities, optionally with change tracking disabled.
+    IQueryable<T> FindAll(bool trackChanges);
+
+    // Get entities matching a condition.
+    IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression, bool trackChanges);
+
+    // Add a new entity.
+    void Create(T entity);
+
+    // Update an existing entity.
+    void Update(T entity);
+
+    // Delete an entity.
+    void Delete(T entity);
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.5: CREATE GENERIC REPOSITORY IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/EFCore/RepositoryBase.cs
+
+PURPOSE: Implements the generic interface using Entity Framework.
+AMAÇ   : Genel arayüzü Entity Framework kullanarak uygular.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using Repositories.Contracts;
+
+namespace Repositories.EFCore;
+
+public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
+{
+    protected RepositoryContext RepositoryContext;
+
+    public RepositoryBase(RepositoryContext repositoryContext)
+    {
+        RepositoryContext = repositoryContext;
+    }
+
+    public IQueryable<T> FindAll(bool trackChanges) =>
+        !trackChanges
+            ? RepositoryContext.Set<T>().AsNoTracking()
+            : RepositoryContext.Set<T>();
+
+    public IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression, bool trackChanges) =>
+        !trackChanges
+            ? RepositoryContext.Set<T>().Where(expression).AsNoTracking()
+            : RepositoryContext.Set<T>().Where(expression);
+
+    public void Create(T entity) => RepositoryContext.Set<T>().Add(entity);
+    public void Update(T entity) => RepositoryContext.Set<T>().Update(entity);
+    public void Delete(T entity) => RepositoryContext.Set<T>().Remove(entity);
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.6: CREATE DRONE REPOSITORY INTERFACE
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/Contracts/IDroneRepository.cs
+
+PURPOSE: Specific methods for Drone operations.
+AMAÇ   : Drone işlemleri için özel metotlar.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Entities.Models;
+
+namespace Repositories.Contracts;
+
+public interface IDroneRepository : IRepositoryBase<Drone>
+{
+    IEnumerable<Drone> GetAllDrones(bool trackChanges);
+    Drone GetDroneById(int id, bool trackChanges);
+    void CreateDrone(Drone drone);
+    void UpdateOneDrone(Drone drone);
+    void DeleteOneDrone(Drone drone);
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.7: CREATE DRONE REPOSITORY IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/EFCore/DroneRepository.cs
+
+PURPOSE: Implements drone-specific repository methods by inheriting from RepositoryBase.
+AMAÇ   : RepositoryBase'den miras alarak drone'a özel repository metotlarını uygular.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Entities.Models;
+using Repositories.Contracts;
+
+namespace Repositories.EFCore;
+
+/*
+ * ## 1. The Big Picture
+   We are using a **Generic Repository Pattern**.
+   **Generic**: We write the common code (Create, Read, Update, Delete) once and reuse it 
+   for all tables (Drones, Users, Orders, etc.).
+   **Specific**: We create specific repositories (like `DroneRepository`) for logic that 
+   only applies to that specific table.
+
+ **Problem**: `RepositoryBase` is too generic. It doesn't know about "Drones".
+ **Solution**: We create a specific repository for Drones that inherits the generic powers 
+ but can also have specific rules (like sorting by Model).
+ */
+public class DroneRepository : RepositoryBase<Drone>, IDroneRepository
+{
+    public DroneRepository(RepositoryContext repositoryContext)
+        : base(repositoryContext)
+    {
+    }
+
+    public void CreateDrone(Drone drone) => Create(drone);
+
+    public void UpdateOneDrone(Drone drone) => Update(drone);
+
+    public void DeleteOneDrone(Drone drone) => Delete(drone);
+
+    public IEnumerable<Drone> GetAllDrones(bool trackChanges) =>
+        FindAll(trackChanges).OrderBy(d => d.Model).ToList();
+
+    public Drone GetDroneById(int id, bool trackChanges) =>
+        FindByCondition(d => d.Id.Equals(id), trackChanges).SingleOrDefault();
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.8: CREATE REPOSITORY MANAGER INTERFACE
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/Contracts/IRepositoryManager.cs
+
+PURPOSE: Groups all repositories and provides a single Save method.
+AMAÇ   : Tüm depoları gruplar ve tek bir Kaydet metodu sağlar.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+namespace Repositories.Contracts;
+
+public interface IRepositoryManager
+{
+    IDroneRepository Drone { get; }
+    void Save();
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 6.9: CREATE REPOSITORY MANAGER IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+FILE   : Repositories/EFCore/RepositoryManager.cs
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Repositories.Contracts;
+
+namespace Repositories.EFCore;
+
+public class RepositoryManager : IRepositoryManager
+{
+    private readonly RepositoryContext _context;
+    private readonly Lazy<IDroneRepository> _droneRepository;
+
+    public RepositoryManager(RepositoryContext context)
+    {
+        _context = context;
+        _droneRepository = new Lazy<IDroneRepository>(() => new DroneRepository(context));
+    }
+
+    public IDroneRepository Drone => _droneRepository.Value;
+    public void Save() => _context.SaveChanges();
+}
+────────────────────────────────────────────────────────────────────────────────
+
+
+════════════════════════════════════════════════════════════════════════════════
+7.0  PHASE 4: API LAYER / API KATMANI
+════════════════════════════════════════════════════════════════════════════════
+
+OBJECTIVE / HEDEF:
+EN: Configure the API and create the controller endpoints.
+TR: API'yi yapılandır ve controller uç noktalarını oluştur.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 7.1: INSTALL NUGET PACKAGES FOR API
+────────────────────────────────────────────────────────────────────────────────
+COMMAND:
+    dotnet add SkyLogisticsAPI/SkyLogisticsAPI.csproj package Microsoft.EntityFrameworkCore.Design
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 7.2: CONFIGURE CONNECTION STRING
+────────────────────────────────────────────────────────────────────────────────
+FILE   : SkyLogisticsAPI/appsettings.json
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+{
+  "ConnectionStrings": {
+    "sqlConnection": "Server=YOUR_SERVER; Database=SkyLogisticsDb; User Id=YOUR_USER; Password=YOUR_PASSWORD; TrustServerCertificate=True"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    }
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 7.3: CREATE SERVICE EXTENSIONS
+────────────────────────────────────────────────────────────────────────────────
+FILE   : SkyLogisticsAPI/Extensions/ServiceExtensions.cs
+
+PURPOSE: Keeps Program.cs clean by moving configuration logic here.
+AMAÇ   : Konfigürasyon mantığını buraya taşıyarak Program.cs'i temiz tutar.
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Microsoft.EntityFrameworkCore;
+using Repositories.Contracts;
+using Repositories.EFCore;
+
+namespace SkyLogisticsAPI.Extensions;
+
+public static class ServiceExtensions
+{
+    public static void ConfigureSqlContext(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddDbContext<RepositoryContext>(opts =>
+            opts.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
+    }
+
+    public static void ConfigureRepositoryManager(this IServiceCollection services)
+    {
+        services.AddScoped<IRepositoryManager, RepositoryManager>();
+    }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 7.4: CONFIGURE PROGRAM.CS
+────────────────────────────────────────────────────────────────────────────────
+FILE   : SkyLogisticsAPI/Program.cs
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using SkyLogisticsAPI.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.ConfigureSqlContext(builder.Configuration);
+builder.Services.ConfigureRepositoryManager();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 7.5: CREATE DRONES CONTROLLER
+────────────────────────────────────────────────────────────────────────────────
+FILE   : SkyLogisticsAPI/Controllers/DronesController.cs
+
+CODE   :
+────────────────────────────────────────────────────────────────────────────────
+using Entities.Models;
+using Microsoft.AspNetCore.Mvc;
+using Repositories.Contracts;
+
+namespace SkyLogisticsAPI.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class DronesController : ControllerBase
+{
+    private readonly IRepositoryManager _manager;
+
+    public DronesController(IRepositoryManager manager)
+    {
+        _manager = manager;
+    }
+
+    [HttpGet]
+    public IActionResult GetAllDrones()
+    {
+        var drones = _manager.Drone.GetAllDrones(trackChanges: false);
+        return Ok(drones);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetDroneById(int id)
+    {
+        var drone = _manager.Drone.GetDroneById(id, trackChanges: false);
+        if (drone is null)
+            return NotFound();
+        return Ok(drone);
+    }
+
+    [HttpPost]
+    public IActionResult CreateDrone([FromBody] Drone drone)
+    {
+        if (drone is null)
+            return BadRequest("Drone object is null");
+
+        _manager.Drone.CreateDrone(drone);
+        _manager.Save();
+        return StatusCode(201, drone);
+    }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+
+════════════════════════════════════════════════════════════════════════════════
+8.0  PHASE 5: DATABASE & TESTING / VERİTABANI VE TEST
+════════════════════════════════════════════════════════════════════════════════
+
+OBJECTIVE / HEDEF:
+EN: Create the database and run the application.
+TR: Veritabanını oluştur ve uygulamayı çalıştır.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 8.1: INSTALL EF CORE TOOLS
+────────────────────────────────────────────────────────────────────────────────
+COMMAND:
+    dotnet tool install --global dotnet-ef
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 8.2: CREATE MIGRATION
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Generate a migration script to create the "Drones" table.
+NE     : "Drones" tablosunu oluşturmak için bir göç betiği üret.
+
+COMMAND:
+    dotnet ef migrations add InitialCreate --project Repositories --startup-project SkyLogisticsAPI
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 8.3: UPDATE DATABASE
+────────────────────────────────────────────────────────────────────────────────
+WHAT   : Execute the migration on the actual database.
+NE     : Gerçek veritabanında göçü çalıştır.
+
+COMMAND:
+    dotnet ef database update --project Repositories --startup-project SkyLogisticsAPI
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 8.4: RUN THE APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+COMMAND:
+    dotnet run --project SkyLogisticsAPI
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 8.5: TEST ENDPOINTS
+────────────────────────────────────────────────────────────────────────────────
+Use Postman or a browser to test:
+
+    GET  https://localhost:5001/api/drones         → List all drones
+    GET  https://localhost:5001/api/drones/1       → Get drone with Id=1
+    POST https://localhost:5001/api/drones         → Create a new drone
+         Body (JSON): { "model": "Phantom 4", "serialNumber": "DR-001", "batteryLevel": 100, "status": "Idle" }
+
+
+════════════════════════════════════════════════════════════════════════════════
+9.0  APPENDIX / EKLER
+════════════════════════════════════════════════════════════════════════════════
+
+9.1  FINAL PROJECT STRUCTURE / NİHAİ PROJE YAPISI
+────────────────────────────────────────────────────────────────────────────────
+
+SkyLogistics/
+├── SkyLogistics.sln
+├── Entities/
+│   ├── Entities.csproj
+│   └── Models/
+│       └── Drone.cs
+├── Repositories/
+│   ├── Repositories.csproj
+│   ├── Contracts/
+│   │   ├── IRepositoryBase.cs
+│   │   ├── IDroneRepository.cs
+│   │   └── IRepositoryManager.cs
+│   └── EFCore/
+│       ├── RepositoryContext.cs
+│       ├── RepositoryBase.cs
+│       ├── DroneRepository.cs
+│       └── RepositoryManager.cs
+└── SkyLogisticsAPI/
+    ├── SkyLogisticsAPI.csproj
+    ├── Program.cs
+    ├── appsettings.json
+    ├── Controllers/
+    │   └── DronesController.cs
+    └── Extensions/
+        └── ServiceExtensions.cs
+
+
+════════════════════════════════════════════════════════════════════════════════
+                              END OF DOCUMENT
+                              DOKÜMAN SONU
+════════════════════════════════════════════════════════════════════════════════
