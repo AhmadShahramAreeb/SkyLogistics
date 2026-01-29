@@ -3,6 +3,7 @@ namespace Entities.Models;
 public class Drone
 {
     public int Id { get; set; }
+    public string Name { get; set; }
     public string Model { get; set; }
 
     // Serial number for tracking.

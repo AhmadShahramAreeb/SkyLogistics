@@ -128,6 +128,7 @@ namespace SkyLogisticsWebAPI.Controllers
                     return BadRequest("Route ID and Body ID must match"); //400
                 }
 
+                entity.Name = drone.Name;
                 entity.Model = drone.Model;
                 entity.SerialNumber = drone.SerialNumber;
                 entity.BatteryLevel = drone.BatteryLevel;
